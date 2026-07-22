@@ -1,16 +1,19 @@
-pypresence @ git+https://github.com/qwertyquerty/pypresence.git
-pyinstaller==6.5.0
-PyQtWebEngine
-yandex-music
-packaging
-requests
-colorama
-pystray
-keyring
-pywin32
-Pillow
-asyncio
 psutil
+pypresence
+pystray
+Pillow
+keyring
+yandex-music
+aiohttp
+requests
+packaging
+colorama
 PyQt6
 PyQt6-WebEngine
-aiohttp
+
+# В Linux для keyring требуется бэкенд Secret Service (обычно он уже присутствует
+# в GNOME/KDE через gnome-keyring или kwallet). Если в
+# минимальной системе или системе без графического интерфейса возникают ошибки keyring, 
+# раскомментируйте приведённую ниже строку, чтобы вместо этого использовать простой зашифрованный
+# файл в качестве резервного варианта:
+# keyrings.alt

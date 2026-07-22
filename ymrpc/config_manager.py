@@ -1,19 +1,20 @@
 import configparser
-import os
+import pathlib
 
 
 class ConfigManager:
     def __init__(self, config_file="settings.ini", temp_dir_name="YandexMusicRPC"):
-        self.temp_dir = os.path.join(os.getenv("LOCALAPPDATA"), temp_dir_name)
-        if not os.path.exists(self.temp_dir):
-            os.makedirs(self.temp_dir)
+        self.temp_dir = pathlib.Path.home() / f".{temp_dir_name}"
 
-        self.config_file = os.path.join(self.temp_dir, config_file)
+        if not self.temp_dir.exists():
+            self.temp_dir.mkdir(parents=True, exist_ok=True)
+
+        self.config_file = self.temp_dir / config_file
         self.config = configparser.ConfigParser()
         self._load_config()
 
     def _load_config(self):
-        if os.path.exists(self.config_file):
+        if self.config_file.exists():
             self.config.read(self.config_file)
         else:
             with open(self.config_file, "w") as file:

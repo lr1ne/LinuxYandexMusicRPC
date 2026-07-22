@@ -3,12 +3,12 @@ import pystray
 from .enums import ButtonConfig, LanguageConfig, LogType
 from .logger import log
 from . import state
-from .windows import is_in_autostart
+from .utils import platform_checks
 from .presence import Presence
 
 
 def get_saves_settings(fromStart: bool = False):
-    state.auto_start_windows = is_in_autostart()
+    state.auto_start = platform_checks.is_in_autostart()
 
     state.button_config = state.config_manager.get_enum_setting(
         "UserSettings", "buttons_settings", ButtonConfig, fallback=ButtonConfig.BOTH
@@ -29,8 +29,8 @@ def create_enum_menu(enum_class, get_setting_func, set_setting_func):
     def create_item(value):
         return pystray.MenuItem(
             value.name,
-            lambda item: set_setting_func(value),
-            checked=lambda item: get_setting_func("UserSettings", enum_class) == value,
+            lambda item, val=value: set_setting_func(val),
+            checked=lambda item, val=value: get_setting_func("UserSettings", enum_class) == val,
         )
 
     return pystray.Menu(*[create_item(value) for value in enum_class])

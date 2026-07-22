@@ -1,9 +1,8 @@
 import multiprocessing
 from .config_manager import ConfigManager
 
-# Runtime globals (kept intentionally to preserve original behavior).
 ya_token = str()
-auto_start_windows = False
+auto_start = False
 login_auto_started = False
 
 playable_id_prev = None
@@ -18,6 +17,5 @@ config_manager = ConfigManager()
 button_config = None
 language_config = None
 
-# Windows handles / objects (assigned at runtime).
 window = None
 mainMenu = None

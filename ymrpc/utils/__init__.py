@@ -1,11 +1,11 @@
 import re
-import string
-import pathlib
-from .enums import ButtonConfig, LanguageConfig
+from typing import Optional
+
+from ..enums import ButtonConfig, LanguageConfig
 
 
 def format_duration(duration_ms: int) -> str:
-    """«М:СС»"""
+    """Formats duration from milliseconds to M:SS format."""
     total_seconds = duration_ms // 1000
     minutes = total_seconds // 60
     seconds = total_seconds % 60
@@ -13,17 +13,17 @@ def format_duration(duration_ms: int) -> str:
 
 
 def trim_string(text: str, max_chars: int) -> str:
-    """Обрезает и сокращает строку, если она превышает max_chars."""
+    """Trims and truncates a string if it exceeds max_chars."""
     return f"{text[:max_chars]}..." if len(text) > max_chars else text
 
 
 def single_char(s: str) -> str:
-    """Оборачивает строку, состоящую из одного символа, в кавычки."""
+    """Wraps a single character string in quotes."""
     return f'"{s}"' if len(s) == 1 else s
 
 
 def extract_deep_link(url: str) -> Optional[str]:
-    """Извлекает полноценную ссылку Yandex Music из стандартного веб-URL."""
+    """Extracts a Yandex Music deep link from a standard web URL."""
     pattern = r"https://music.yandex.ru/album/(\d+)/track/(\d+)"
     match = re.match(pattern, url)
     if match:
@@ -35,13 +35,13 @@ def extract_deep_link(url: str) -> Optional[str]:
 
 def build_buttons(url: str) -> list:
     """
-    Создает список кнопок (с метками и URL-адресами) на основе настроек
-    button_config и указанного URL-адреса.
+    Generates a list of buttons (label and URL) based on the configured
+    button_config and the provided URL.
     """
-    from . import state
+    from .. import state
 
     def create_button(label_en: str, label_ru: str, url_btn: str) -> dict:
-        """Вспомогательная функция для создания словаря кнопок."""
+        """Helper function to create a button dictionary."""
         label_lang = label_en if state.language_config == LanguageConfig.ENGLISH else label_ru
         return {"label": label_lang, "url": url_btn}
 
@@ -66,5 +66,5 @@ def build_buttons(url: str) -> list:
 
 
 def blur_string(s: str) -> str:
-    """Блюрит отображение строки, если она слишком длинная, нужно чтобы заблюрить токен."""
+    """Blurs a string for display purposes if it is too long."""
     return "" if s is None else (s if len(s) <= 8 else s[:4] + "*" * (len(s) - 8) + s[-4:])

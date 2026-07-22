@@ -1,9 +1,5 @@
 import multiprocessing
-import os
-import sys
 import threading
-
-import win32console
 
 from ymrpc.constants import REPO_URL
 from ymrpc.enums import LogType
@@ -13,16 +9,7 @@ from ymrpc.settings import get_saves_settings
 from ymrpc.token_manager import Init_yaToken
 from ymrpc.tray import create_tray_icon, tray_thread
 from ymrpc.version_check import GetLastVersion
-from ymrpc.windows import (
-    Check_conhost,
-    Check_run_by_startup,
-    Disable_close_button,
-    Is_already_running,
-    Is_run_by_exe,
-    Set_ConsoleMode,
-    Show_Console_Permanent,
-    WaitAndExit,
-)
+from ymrpc.utils import platform_checks
 from ymrpc import state
 
 
@@ -30,31 +17,26 @@ def main():
     multiprocessing.freeze_support()
 
     try:
-        if Is_run_by_exe():
-            Check_conhost()
-            Set_ConsoleMode()
+        if platform_checks.is_executable_environment():
+            platform_checks.ensure_console_mode()
 
             log("Launched. Check the actual version...")
             GetLastVersion(REPO_URL)
 
             get_saves_settings(True)
 
+            if platform_checks.is_already_running():
+                log("YandexMusicRPC is already running.", LogType.Error)
+                platform_checks.wait_and_exit()
+                return
+
             state.mainMenu = create_tray_icon()
             icon_thread = threading.Thread(target=tray_thread, args=(state.mainMenu,))
             icon_thread.daemon = True
             icon_thread.start()
 
-            state.window = win32console.GetConsoleWindow()
-
-            if Is_already_running():
-                log("YandexMusicRPC is already running.", LogType.Error)
-                Show_Console_Permanent()
-                WaitAndExit()
-                return
-
-            win32console.SetConsoleTitle("YandexMusicRPC - Console")
-            Disable_close_button()
-            Check_run_by_startup()
+            platform_checks.set_console_title("YandexMusicRPC - Console")
+            platform_checks.check_startup_status()
         else:
             get_saves_settings(True)
             log("Launched without minimizing to tray and other and other gui functions")

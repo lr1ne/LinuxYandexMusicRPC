@@ -1,3 +1,7 @@
+Этот форк нацелен на то, чтобы добавить кроссплатформенность оригинальной программы. Сейчас моя версия ОЧЕНЬ сырая и пользоваться ей чисто теоретически можно, правда проверено пока только на линуксе.
+Я буду стараться развивать этот проект по возможности.
+
+
 # **<img src="./assets/YMRPC_ico.ico" alt="[DISCORD RPC]" width="30"/> &nbsp;Yandex Music Discord Rich Presence**
 [![TotalDownloads](https://img.shields.io/github/downloads/FozerG/YandexMusicRPC/total)](https://github.com/FozerG/YandexMusicRPC/releases "Download") [![LastRelease](https://img.shields.io/github/v/release/FozerG/YandexMusicRPC)](https://github.com/FozerG/YandexMusicRPC/releases "Download") [![CodeOpen](https://img.shields.io/github/languages/top/FozerG/YandexMusicRPC)](https://github.com/FozerG/YandexMusicRPC/blob/main/main.py "Show code") [![OS - Windows](https://img.shields.io/badge/OS-Windows-blue?logo=windows&logoColor=white)](https://github.com/FozerG/YandexMusicRPC/releases "Download")
 

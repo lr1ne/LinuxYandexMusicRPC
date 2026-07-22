@@ -1,3 +1,15 @@
+"""
+В оригинальной программе и, как следствие, в моей версии есть баг - статус сразу меняется на паузу.
+
+Я думаю, это связано с тем, что Ynison почему-то сразу возвращает is_paused=True. 
+Поэтому я просто удалил проверку флага current_state["paused"] 
+и установил статус воспроизведения в PlaybackStatus.Playing при успешном получении информации о треке.
+Из-за этого теперь при остановке на паузу статус в Discord не меняется и полоска продолжается, 
+но, как по мне, это лучше, чем если бы статус постоянно висел на паузе.
+
+Как лучше решить этот вопрос правильно, я пока без понятия. 
+"""
+
 import time
 from datetime import timedelta
 
@@ -8,13 +20,59 @@ import pypresence
 from .constants import CLIENT_ID_EN, CLIENT_ID_RU_DECLINED
 from .enums import ButtonConfig, LanguageConfig, LogType, PlaybackStatus
 from .logger import log
-from .utils import Single_char, TrimString, build_buttons, format_duration
+from .utils import single_char, trim_string, build_buttons, format_duration
 from .yandex_client import get_info
 from .yandex_ws import get_current_track
 from .error_handling import Handle_exception
 from . import state
 from pypresence import ActivityType
 
+import pypresence.utils
+import sys
+import os
+import tempfile
+
+_original_get_ipc_path = pypresence.utils.get_ipc_path
+
+def _patched_get_ipc_path(pipe=None):
+    ipc = "discord-ipc-"
+    if pipe is not None:
+        ipc = f"{ipc}{pipe}"
+
+    if sys.platform in ("linux", "darwin"):
+        tempdir = (
+            os.environ.get("XDG_RUNTIME_DIR")
+            or (
+                f"/run/user/{os.getuid()}"
+                if os.path.exists(f"/run/user/{os.getuid()}")
+                else tempfile.gettempdir()
+            )
+        )
+        
+        paths = [
+            ".",
+            "..",
+            "snap.discord",
+            "app/com.discordapp.Discord",
+            "app/com.discordapp.DiscordCanary",
+            "app/dev.vencord.Vesktop",   
+            "app/xyz.equibop.Equibop",   
+        ]
+        
+        for path in paths:
+            full_path = os.path.abspath(os.path.join(tempdir, path))
+            if os.path.isdir(full_path):
+                for entry in os.scandir(full_path):
+                    if (
+                        entry.name.startswith(ipc)
+                        and os.path.exists(entry)
+                        and pypresence.utils.test_ipc_path(entry.path)
+                    ):
+                        return entry.path
+                        
+    return _original_get_ipc_path(pipe)
+
+pypresence.utils.get_ipc_path = _patched_get_ipc_path
 
 class Presence:
     client = None
@@ -23,11 +81,16 @@ class Presence:
     running = False
     paused = False
     paused_time = 0
-    exe_names = ["Discord.exe", "DiscordCanary.exe", "DiscordPTB.exe", "Vesktop.exe"]
+    exe_names = [
+        "Discord.exe", "DiscordCanary.exe", "DiscordPTB.exe", "Vesktop.exe",
+        "discord", "discordcanary", "discord-canary", "discordptb", "discord-ptb",
+        "vesktop", "webcord", "armcord", "equibop", "equibop.exe"
+    ]
 
     @staticmethod
     def is_discord_running() -> bool:
-        return any(name in (p.name() for p in psutil.process_iter()) for name in Presence.exe_names)
+        running_names = [p.name().lower() for p in psutil.process_iter(["name"]) if p.info.get("name")]
+        return any(name.lower() in running_names for name in Presence.exe_names)
 
     @staticmethod
     def connect_rpc():
@@ -98,7 +161,7 @@ class Presence:
             Presence.rpc.clear()
 
     @staticmethod
-    def start() -> None:  # sourcery skip: low-code-quality
+    def start() -> None: 
         clientErrorShown = False
         pausedTimestamp = 0
 
@@ -210,9 +273,9 @@ class Presence:
             "details": ongoing_track["title"],
             "large_image": ongoing_track["og-image"],
             "small_image": (
-                "https://github.com/FozerG/YandexMusicRPC/blob/main/assets/Paused.png?raw=true"
+                "https://github.com/lr1ne/LinuxYandexMusicRPC/blob/main/assets/Paused.png?raw=true"
                 if paused
-                else "https://github.com/FozerG/YandexMusicRPC/blob/main/assets/Playing.png?raw=true"
+                else "https://github.com/lr1ne/LinuxYandexMusicRPC/blob/main/assets/Playing.png?raw=true"
             ),
             "small_text": paused_text if paused else playing_text,
         }
@@ -267,7 +330,7 @@ class Presence:
             elif Presence.currentTrack and Presence.currentTrack.get("success"):
                 currentTrack_copy = Presence.currentTrack.copy()
                 currentTrack_copy["start-time"] = timedelta(milliseconds=int(current_state["progress_ms"]))
-                currentTrack_copy["playback"] = PlaybackStatus.Paused if current_state["paused"] else PlaybackStatus.Playing
+                currentTrack_copy["playback"] = PlaybackStatus.Playing
                 return currentTrack_copy
 
             trackId = track_info["track_id"].split(":")
@@ -275,15 +338,15 @@ class Presence:
 
             return {
                 "success": True,
-                "title": Single_char(TrimString(track_info["title"], 40)),
-                "artist": Single_char(TrimString(f"{', '.join(track_info['artists'])}", 40)),
-                "album": Single_char(TrimString(track_info["album"], 25)),
-                "label": TrimString(f"{', '.join(track_info['artists'])} - {track_info['title']}", 60),
+                "title": single_char(trim_string(track_info["title"], 40)),
+                "artist": single_char(trim_string(f"{', '.join(track_info['artists'])}", 40)),
+                "album": single_char(trim_string(track_info["album"], 25)),
+                "label": trim_string(f"{', '.join(track_info['artists'])} - {track_info['title']}", 60),
                 "link": f"https://music.yandex.ru/album/{trackId[1]}/track/{trackId[0]}/",
                 "durationSec": duration_ms // 1000,
                 "formatted_duration": format_duration(duration_ms),
                 "start-time": timedelta(milliseconds=int(current_state["progress_ms"])),
-                "playback": PlaybackStatus.Paused if current_state["paused"] else PlaybackStatus.Playing,
+                "playback": PlaybackStatus.Playing,
                 "og-image": "https://" + track_info["og-image"][:-2] + "400x400",
             }
 
